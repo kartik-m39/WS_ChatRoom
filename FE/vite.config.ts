@@ -4,10 +4,5 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(),],
-  theme: {
-    colors: {
-      'myColor': '#1da1f2'
-    },
-  },
+  plugins: [react(), tailwindcss(),]
 })
