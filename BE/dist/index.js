@@ -44,7 +44,11 @@ wss.on("connection", (socket) => {
                     message: parsedData.payload.message
                 }
             };
-            sockets.forEach((item) => item.send(JSON.stringify(chat)));
+            sockets.forEach((item) => {
+                if (item !== socket) { // sending messages to all sockets except the sender itself
+                    item.send(JSON.stringify(chat));
+                }
+            });
         }
     });
     socket.on("close", () => {

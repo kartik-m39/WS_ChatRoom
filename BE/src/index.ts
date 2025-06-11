@@ -1,5 +1,4 @@
-import { isJsxOpeningElement } from "typescript";
-import { WebSocketServer } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
 
 const wss = new WebSocketServer({port: 8080});
 
@@ -58,7 +57,11 @@ wss.on("connection", (socket) => {
                     message: parsedData.payload.message
                 }
             }
-            sockets.forEach((item: WebSocket) => item.send(JSON.stringify(chat)));
+            sockets.forEach((item: WebSocket) => {
+                if(item !== socket){     // sending messages to all sockets except the sender itself
+                    item.send(JSON.stringify(chat));
+                }
+            })
 
         }
 

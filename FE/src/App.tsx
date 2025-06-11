@@ -9,32 +9,58 @@ function App() {
   const [joinComponent, setJoinComponent] = useState<boolean>(false);
   const [openRoom, setOpenRoom] = useState<boolean>(false);
   const [roomId, setRoomId] = useState<string>("");
-  // const [socket, setsocket] = useState<WebSocket>()
+  // const [socket, setsocket] = useState<WebSocket>();
+  const [msg, setMsg] = useState<string>("");
   
-  const socket = useSocket();
+  const socket = useSocket(); // can return either WS || null so check socket? exists before rendering ChatRoom.tsx
 
-  if(roomId && socket){
-    const req = {
-      type: "join",
-      payload: {
-        roomId: roomId
-      }
-    }
-    socket.send(JSON.stringify(req));
-  }   
+// This is running unconditionally whenever the component mounts causing the the join request to be sent twice so putting it in UseEffect
+
+// Main issues:
+// 1. Running this code directly in component body causes it to execute on EVERY render,not just when roomId changes. This sends duplicate join requests.
+
+// 2. When ChatRoom component first mounts, both roomId and socket already exist (passed from parent), so join request gets sent immediately.Then when roomId changes from "" to actual room ID, the useEffect runs again due to dependency array [roomId, socket], sending a second join request.
+
+// 3. If socket gets recreated (component remount, connection issues), the effect runs again even for the same roomId, sending unnecessary join requests.
+
+  // if(roomId && socket){
+  //   const req = {
+  //     type: "join",
+  //     payload: {
+  //       roomId: roomId
+  //     }
+  //   }
+  //   socket.send(JSON.stringify(req));
+  // }   
 
   useEffect(() => {
-    if(roomId){
+    if(roomId && socket){
+      const req = {
+        type: "join",
+        payload: {
+          roomId: roomId
+        }
+      }
+      socket.send(JSON.stringify(req));
+
+      socket.onmessage = (event) => {
+        const res = JSON.parse(event.data);
+
+        if(res.type === "alert"){
+          setMsg(res.payload.message);
+        }
+      }
+
       setOpenRoom(true);
       setCreateComponent(false);
       setJoinComponent(false);
     }
-  }, [roomId]);
+  }, [roomId, socket]);
 
 
   return (
     <>
-        {openRoom ? (<ChatRoom roomId={roomId} socket={socket} />) : 
+        {openRoom && socket ? (<ChatRoom roomId={roomId} socket={socket} alert={msg} />) : 
           (<div className='bg-black h-screen w-full flex justify-center items-center font'>
             <div className='text-white py-7 px-6 border-1 border-white w-150 rounded-md container '>
 
@@ -52,8 +78,8 @@ function App() {
                 </button>
               </div>
 
-              {createComponent ? <CreateRoomCode/> : null }
               {joinComponent ? <JoinRoomBox setroom={setRoomId} /> : null }
+              {createComponent ? <CreateRoomCode/> : null }
 
             </div>
           </div>)
